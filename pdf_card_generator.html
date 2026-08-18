@@ -1,0 +1,132 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .wrap { padding: 1rem 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 13px; color: var(--color-text-secondary); }
+  input, select { width: 100%; }
+  .actions { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+  .btn-gen { flex: 1; padding: 10px; font-size: 14px; font-weight: 500; background: var(--color-text-primary); color: var(--color-background-primary); border: none; border-radius: var(--border-radius-md); cursor: pointer; }
+  .btn-gen:active { transform: scale(0.98); }
+  .btn-copy { padding: 10px 20px; font-size: 14px; cursor: pointer; border-radius: var(--border-radius-md); }
+  .output-wrap { position: relative; }
+  .output-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .copy-btn { font-size: 12px; padding: 3px 10px; cursor: pointer; border-radius: var(--border-radius-md); }
+  .copy-btn.done { color: var(--color-text-success); border-color: var(--color-border-success); }
+  pre { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 14px; font-size: 12px; font-family: var(--font-mono); overflow-x: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.6; color: var(--color-text-primary); min-height: 60px; }
+  .badge-row { display: flex; gap: 8px; align-items: center; margin-bottom: 1rem; }
+  .badge { font-size: 11px; padding: 3px 9px; border-radius: 100px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); color: var(--color-text-secondary); cursor: pointer; transition: background 0.15s; }
+  .badge:hover { background: var(--color-background-tertiary); }
+  .hint { font-size: 12px; color: var(--color-text-secondary); margin-top: 1rem; padding: 10px 14px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); border-left: 2px solid var(--color-border-secondary); }
+</style>
+
+<div class="wrap">
+
+  <div class="grid">
+    <div class="field">
+      <label>Edition title</label>
+      <input type="text" id="title" placeholder="Railway Crime · 16–28 Feb 2026" />
+    </div>
+    <div class="field">
+      <label>Month tag (for search)</label>
+      <input type="text" id="month" placeholder="Feb 2026" />
+    </div>
+    <div class="field full">
+      <label>PDF file path (inside your pdf/ folder)</label>
+      <input type="text" id="filepath" placeholder="pdf/Railway-Crime-16-28-Feb-2026.pdf" />
+    </div>
+    <div class="field">
+      <label>Thumbnail image</label>
+      <input type="text" id="thumb" value="thumbs/default.jpg" />
+    </div>
+    <div class="field">
+      <label>Badge label (optional)</label>
+      <input type="text" id="badge" placeholder="Latest" />
+    </div>
+  </div>
+
+  <p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px;">Quick fill:</p>
+  <div class="badge-row">
+    <span class="badge" onclick="quickFill('01–15 Mar 2026','Mar 2026','pdf/Railway-Crime-01-15-Mar-2026.pdf','Latest')">Mar 2026 (1–15)</span>
+    <span class="badge" onclick="quickFill('16–31 Mar 2026','Mar 2026','pdf/Railway-Crime-16-31-Mar-2026.pdf','Latest')">Mar 2026 (16–31)</span>
+    <span class="badge" onclick="quickFill('01–15 Apr 2026','Apr 2026','pdf/Railway-Crime-01-15-Apr-2026.pdf','Latest')">Apr 2026 (1–15)</span>
+  </div>
+
+  <div class="actions">
+    <button class="btn-gen" onclick="generate()">Generate card code</button>
+  </div>
+
+  <div class="output-wrap">
+    <div class="output-label">
+      <span>Paste this inside <code style="font-size:11px;">&lt;div class="pdf-grid"&gt;</code> in pdfs.html</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyCode()">Copy</button>
+    </div>
+    <pre id="output">← Fill the form above and click "Generate card code"</pre>
+  </div>
+
+  <div class="hint">
+    <strong style="font-size:12px;">How to add a new PDF in 3 steps:</strong><br>
+    1. Upload your PDF into the <code style="font-size:11px;">pdf/</code> folder on your server.<br>
+    2. Fill the form above → Generate → Copy the code.<br>
+    3. Open <code style="font-size:11px;">pdfs.html</code> and paste the code as the <em>first card</em> inside <code style="font-size:11px;">&lt;div class="pdf-grid"&gt;</code>.
+  </div>
+
+</div>
+
+<script>
+function quickFill(title, month, path, badge) {
+  document.getElementById('title').value = 'Railway Crime · ' + title;
+  document.getElementById('month').value = month;
+  document.getElementById('filepath').value = path;
+  document.getElementById('badge').value = badge;
+}
+
+function generate() {
+  const title    = document.getElementById('title').value.trim() || 'Railway Crime · Edition';
+  const month    = document.getElementById('month').value.trim() || '';
+  const filepath = document.getElementById('filepath').value.trim() || '#';
+  const thumb    = document.getElementById('thumb').value.trim() || 'thumbs/default.jpg';
+  const badge    = document.getElementById('badge').value.trim();
+
+  const monthTag  = month ? `\n        <span class="pdf-tag">${month}</span>` : '';
+  const badgeHtml = badge
+    ? `\n  <div class="pdf-badge">${badge}</div>`
+    : '';
+
+  const code =
+`<div class="pdf-preview-card fade-in">${badgeHtml}
+  <div class="pdf-thumb">
+    <img src="${thumb}" alt="${title}" onerror="this.style.display='none'">
+  </div>
+  <div class="pdf-info">
+    <h3>${title}</h3>
+    <div class="pdf-meta">
+      <span class="pdf-tag">PDF</span>
+      <span class="pdf-tag">हिंदी</span>${monthTag}
+    </div>
+    <div class="pdf-actions">
+      <a href="${filepath}" target="_blank" class="open-btn">&#128065; Open</a>
+      <a href="${filepath}" download class="download-btn">&#11015; Download</a>
+    </div>
+  </div>
+</div>`;
+
+  document.getElementById('output').textContent = code;
+  document.getElementById('copyBtn').textContent = 'Copy';
+  document.getElementById('copyBtn').classList.remove('done');
+}
+
+function copyCode() {
+  const text = document.getElementById('output').textContent;
+  if (text.startsWith('←')) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('done');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 2000);
+  });
+}
+</script>
